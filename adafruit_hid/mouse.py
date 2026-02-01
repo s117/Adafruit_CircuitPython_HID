@@ -9,6 +9,7 @@
 * Author(s): Dan Halbert
 """
 
+from .keycode import MouseButton
 from . import find_device
 
 try:
@@ -22,16 +23,22 @@ except ImportError:
 class Mouse:
     """Send USB HID mouse reports."""
 
-    LEFT_BUTTON = 1
+    LEFT_BUTTON = MouseButton.LEFT
     """Left mouse button."""
-    RIGHT_BUTTON = 2
+    RIGHT_BUTTON = MouseButton.RIGHT
     """Right mouse button."""
-    MIDDLE_BUTTON = 4
+    MIDDLE_BUTTON = MouseButton.MIDDLE
     """Middle mouse button."""
-    BACK_BUTTON = 8
-    """Back mouse button."""
-    FORWARD_BUTTON = 16
+    SIDE_BUTTON = MouseButton.SIDE
+    """Side button."""
+    EXTRA_BUTTON = MouseButton.EXTRA
+    """Extra button."""
+    FORWARD_BUTTON = MouseButton.FORWARD
     """Forward mouse button."""
+    BACK_BUTTON = MouseButton.BACK
+    """Back mouse button."""
+    TASK_BUTTON = MouseButton.TASK
+    """Task button."""
 
     def __init__(
         self, devices: Sequence[usb_hid.Device], timeout: Optional[int] = None
@@ -48,7 +55,7 @@ class Mouse:
         self._mouse_device = find_device(devices, usage_page=0x1, usage=0x02, timeout=timeout)
 
         # Reuse this bytearray to send mouse reports.
-        # report[0] buttons pressed (LEFT, MIDDLE, RIGHT)
+        # report[0] buttons pressed (LEFT, RIGHT, MIDDLE, etc.)
         # report[1] x movement
         # report[2] y movement
         # report[3] wheel movement

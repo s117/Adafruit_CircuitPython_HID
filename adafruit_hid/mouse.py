@@ -53,12 +53,22 @@ class Mouse:
             devices, usage_page=0x1, usage=0x02, timeout=timeout
         )
 
-        # Reuse this bytearray to send mouse reports.
+        # Basic report format
         # report[0] buttons pressed (LEFT, RIGHT, MIDDLE, etc.)
         # report[1] x movement
         # report[2] y movement
         # report[3] wheel movement
-        self.report = bytearray(4)
+
+        # Extended report format
+        # report[0] buttons pressed (LEFT, RIGHT, MIDDLE, etc.)
+        # report[1] 16-bit x movement (LSB)
+        # report[2] 16-bit x movement (MSB)
+        # report[3] 16-bit y movement (LSB)
+        # report[4] 16-bit y movement (MSB)
+        # report[5] wheel movement
+        # report[6] AC pan movement
+
+        self.report = bytearray(7)  # Reuse this bytearray to send mouse reports.
 
     def __str__(self):
         return str(self._mouse_device)
@@ -139,24 +149,62 @@ class Mouse:
         """
         # Send multiple reports if necessary to move or scroll requested amounts.
         while x != 0 or y != 0 or wheel != 0:
-            partial_x = self._limit(x)
-            partial_y = self._limit(y)
-            partial_wheel = self._limit(wheel)
+            partial_x = self._limit_i8(x)
+            partial_y = self._limit_i8(y)
+            partial_wheel = self._limit_i8(wheel)
             self.report[1] = partial_x & 0xFF
             self.report[2] = partial_y & 0xFF
             self.report[3] = partial_wheel & 0xFF
-            self._mouse_device.send_report(self.report)
+            self._mouse_device.send_report(self.report[:4])
             x -= partial_x
             y -= partial_y
             wheel -= partial_wheel
+
+    def move_ex(self, x: int = 0, y: int = 0, wheel: int = 0, pan: int = 0) -> None:
+        """Move the mouse and turn the wheel / pan as directed. Using the extended report format.
+
+        :param x: Move the mouse along the x axis. Negative is to the left, positive
+            is to the right.
+        :param y: Move the mouse along the y axis. Negative is upwards on the display,
+            positive is downwards.
+        :param wheel: Rotate the wheel this amount. Negative is toward the user, positive
+            is away from the user. The scrolling effect depends on the host.
+        :param pan: Pan (horizontal scroll) this amount. Negative is to the left, positive
+            is to the right. The panning effect depends on the host.
+
+        Note::
+            This method uses the extended report format with 16-bit x and y movement
+            and pan support.
+        """
+        # Send multiple reports if necessary to move or scroll requested amounts.
+        while x != 0 or y != 0 or wheel != 0 or pan != 0:
+            partial_x = self._limit_i16(x)
+            partial_y = self._limit_i16(y)
+            partial_wheel = self._limit_i8(wheel)
+            partial_pan = self._limit_i8(pan)
+            self.report[1] = partial_x & 0xFF
+            self.report[2] = (partial_x >> 8) & 0xFF
+            self.report[3] = partial_y & 0xFF
+            self.report[4] = (partial_y >> 8) & 0xFF
+            self.report[5] = partial_wheel & 0xFF
+            self.report[6] = partial_pan & 0xFF
+            self._mouse_device.send_report(self.report, 0x82)
+            x -= partial_x
+            y -= partial_y
+            wheel -= partial_wheel
+            pan -= partial_pan
 
     def _send_no_move(self) -> None:
         """Send a button-only report."""
         self.report[1] = 0
         self.report[2] = 0
         self.report[3] = 0
-        self._mouse_device.send_report(self.report)
+        self._mouse_device.send_report(self.report[:4])
 
     @staticmethod
-    def _limit(dist: int) -> int:
+    def _limit_i8(dist: int) -> int:
         return min(127, max(-127, dist))
+
+    @staticmethod
+    def _limit_i16(dist: int) -> int:
+        return min(32767, max(-32767, dist))

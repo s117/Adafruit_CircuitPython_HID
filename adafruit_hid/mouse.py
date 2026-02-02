@@ -73,11 +73,13 @@ class Mouse:
     def __str__(self):
         return str(self._mouse_device)
 
-    def press(self, buttons: int) -> None:
+    def press(self, buttons: int, ex: bool = True) -> None:
         """Press the given mouse buttons.
 
         :param buttons: a bitwise-or'd combination of ``LEFT_BUTTON``,
             ``MIDDLE_BUTTON``, and ``RIGHT_BUTTON``.
+        :param ex: If True (default), report buttons using the extended report format.
+            Otherwise, use the basic report format.
 
         Examples::
 
@@ -88,27 +90,35 @@ class Mouse:
             m.press(Mouse.LEFT_BUTTON | Mouse.RIGHT_BUTTON)
         """
         self.report[0] |= buttons
-        self._send_no_move()
+        self._send_no_move(ex)
 
-    def release(self, buttons: int) -> None:
+    def release(self, buttons: int, ex: bool = True) -> None:
         """Release the given mouse buttons.
 
         :param buttons: a bitwise-or'd combination of ``LEFT_BUTTON``,
             ``MIDDLE_BUTTON``, and ``RIGHT_BUTTON``.
+        :param ex: If True (default), report buttons using the extended report format.
+            Otherwise, use the basic report format.
         """
         self.report[0] &= ~buttons
-        self._send_no_move()
+        self._send_no_move(ex)
 
-    def release_all(self) -> None:
-        """Release all the mouse buttons."""
+    def release_all(self, ex: bool = True) -> None:
+        """Release all the mouse buttons.
+
+        :param ex: If True (default), report buttons using the extended report format.
+            Otherwise, use the basic report format.
+        """
         self.report[0] = 0
-        self._send_no_move()
+        self._send_no_move(ex)
 
-    def click(self, buttons: int) -> None:
+    def click(self, buttons: int, ex: bool = True) -> None:
         """Press and release the given mouse buttons.
 
         :param buttons: a bitwise-or'd combination of ``LEFT_BUTTON``,
             ``MIDDLE_BUTTON``, and ``RIGHT_BUTTON``.
+        :param ex: If True (default), report buttons using the extended report format.
+            Otherwise, use the basic report format.
 
         Examples::
 
@@ -119,8 +129,8 @@ class Mouse:
             m.click(Mouse.LEFT_BUTTON)
             m.click(Mouse.LEFT_BUTTON)
         """
-        self.press(buttons)
-        self.release(buttons)
+        self.press(buttons, ex)
+        self.release(buttons, ex)
 
     def move(self, x: int = 0, y: int = 0, wheel: int = 0) -> None:
         """Move the mouse and turn the wheel as directed.
@@ -194,12 +204,23 @@ class Mouse:
             wheel -= partial_wheel
             pan -= partial_pan
 
-    def _send_no_move(self) -> None:
-        """Send a button-only report."""
+    def _send_no_move(self, ex: bool = True) -> None:
+        """
+        Send a button-only report.
+
+        :param ex: If True (default), report buttons using the extended report format.
+            Otherwise, use the basic report format.
+        """
         self.report[1] = 0
         self.report[2] = 0
         self.report[3] = 0
-        self._mouse_device.send_report(self.report[:4])
+        self.report[4] = 0
+        self.report[5] = 0
+        self.report[6] = 0
+        if ex:
+            self._mouse_device.send_report(self.report, 0x82)
+        else:
+            self._mouse_device.send_report(self.report[:4])
 
     @staticmethod
     def _limit_i8(dist: int) -> int:

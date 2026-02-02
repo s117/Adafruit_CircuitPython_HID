@@ -21,7 +21,7 @@ except ImportError:
     supervisor = None
 
 try:
-    from typing import Sequence
+    from typing import Optional, Sequence
 except ImportError:
     pass
 
@@ -40,7 +40,7 @@ def find_device(
     *,
     usage_page: int,
     usage: int,
-    timeout: int = None,
+    timeout: Optional[int] = None,
 ) -> object:
     """
     Search through the provided sequence of devices to find the one with the matching

@@ -13,7 +13,7 @@ from .keycode import MouseButton
 from . import find_device
 
 try:
-    from typing import Sequence
+    from typing import Optional, Sequence
     import usb_hid
 except ImportError:
     pass
@@ -39,7 +39,7 @@ class Mouse:
     TASK_BUTTON = MouseButton.TASK
     """Task button."""
 
-    def __init__(self, devices: Sequence[usb_hid.Device], timeout: int = None) -> None:
+    def __init__(self, devices: Sequence[usb_hid.Device], timeout: Optional[int] = None) -> None:
         """Create a Mouse object that will send USB mouse HID reports.
 
         :param timeout: Time in seconds to wait for USB to become ready before timing out.

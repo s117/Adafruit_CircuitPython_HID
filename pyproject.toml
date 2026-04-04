@@ -10,7 +10,7 @@ requires = [
 ]
 
 [project]
-name = "quax-circuitpython-hid"
+name = "adafruit-circuitpython-hid"
 description = "CircuitPython helper library for simulating HID devices."
 version = "6.1.5"
 readme = "README.rst"
